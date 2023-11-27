@@ -1,3 +1,5 @@
+language: bash
+
 env:
     travis_CLONE_DEPTH: 1
     BUILD_HOSTNAME: "travis-ci.org"
