@@ -1,0 +1,66 @@
+env:
+    travis_CLONE_DEPTH: 1
+    BUILD_HOSTNAME: "travis-ci.org"
+
+task:
+  name: Test
+  skip: $travis_BRANCH == 'main'
+  only_if: $travis_REPO_OWNER == 'ZorEl212'
+  timeout_in: 2m
+  persistent_worker:
+    labels:
+      name: AX61-2
+    isolation:
+      container:
+        image: zorel212/aosp:travis
+        cpu: 2
+        memory: 4G
+  env_script: env
+  show_script: cat $travis_WORKING_DIR/build_rom.sh
+  notify_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/notify.sh | bash
+  test_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/test.sh | bash
+
+task:
+  name: Build
+  skip: $travis_BRANCH == 'main'
+  only_if: $travis_REPO_OWNER == 'ZorEl212'
+  depends_on: Test
+  timeout_in: 4h
+  persistent_worker:
+    labels:
+      name: AX61-1
+    isolation:
+      container:
+        image: zorel212/aosp:travis
+        cpu: 24
+        memory: 120G
+        volumes:
+          - /home/travis/roms:/home/travis/roms
+          - /home/travis/ccache:/home/travis/ccache
+          - /home/travis/.config:/home/travis/.config
+  show_script: cat $travis_WORKING_DIR/build_rom.sh
+  test_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/test.sh | bash
+  sync_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/sync.sh | bash
+  tsync_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/tsync.sh | bash
+  build_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/build.sh | bash
+  ccache_stats_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/ccache_stats.sh | bash
+  upload_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/upload.sh | bash
+  remove_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/remove.sh | bash
+
+task:
+  name: Post Build
+  skip: $travis_BRANCH == 'main'
+  only_if: $travis_REPO_OWNER == 'ZorEl212'
+  skip_notifications: true
+  depends_on: Build
+  timeout_in: 2m
+  persistent_worker:
+    labels:
+      name: AX61-2
+    isolation:
+      container:
+        image: apon77/aosp:travis
+        cpu: 2
+        memory: 4G
+  test_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/test.sh | bash
+  post_build_script: curl -s https://raw.githubusercontent.com/ZorEl212/temporary/main/ci/post_build.sh | bash
